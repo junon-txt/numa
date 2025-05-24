@@ -1,0 +1,89 @@
+/* 📖 Make Content Flow Like a Book */
+.md-content {
+    max-width: 1600px;
+    margin: auto;
+    padding: 60px 20px;
+}
+.md-grid {
+    max-width: 1600px; 
+}
+
+.md-nav {
+    max-width: 144px;
+}
+
+/* 🛑 Remove Documentation Look */
+.md-header, .md-sidebar--secondary {
+    display: none !important;
+}
+
+
+/* ✅ Ensure Text Wraps Properly */
+.md-typeset {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+/* 📜 Add Indents for a Book Feel */
+p {
+    text-align: justify;
+}
+
+/* 📌 Center Images */
+img {
+    display: block;
+    margin: auto;
+    max-width: 100%;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.zh {
+    color: #040404;
+    font-family: "Noto Sans SC", sans-serif;
+    margin-bottom: 0.0em !important;
+}
+
+.es {
+    color: #040404;
+    font-family: "Noto Sans", sans-serif;
+    margin-top: 0em;
+}
+
+p {
+    color: #040404;
+    font-family: "Noto Sans", sans-serif;
+    margin-top: 0em;
+    text-indent: 2em;
+}
+
+.md-typeset details {
+    box-shadow: none;
+    border-radius: 15px !important;
+    border-color: #04040413 !important;
+    text-align: center;
+
+}
+
+.md-typeset details summary {
+    background-color: #00000014 !important;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.md-typeset details p {
+    color: #040404;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 0.7rem;
+    text-align: center;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.md-typeset details ::before,
+.md-typeset details ::after{
+    display: none !important;
+}
