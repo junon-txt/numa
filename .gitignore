@@ -1,0 +1,9 @@
+.python-version
+
+# MkDocs static build files
+site/
+pages_build/
+.build-timestamp
+
+# Python
+__pycache__/*

@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "numa"
+version = "0.1.0"
+description = ""
+authors = ["junon-txt <junon.txt@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+mkdocs-material = "^9.5.50"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

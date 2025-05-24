@@ -1,0 +1,41 @@
+site_name: "Numa (沼)"
+site_url: "https://junon-txt.github.io/numa"
+
+docs_dir: pages
+
+nav:
+  - Home: https://robin.ar
+  - numa.md
+  - katatsumuri.md
+
+theme:
+  name: material
+  font:
+    text: "Merriweather"
+    code: "Noto Sans Traditional Chinese"
+  features:
+    - navigation.instant
+    - navigation.instant.preview
+    - navigation.tracking
+    - navigation.top
+    - navigation.autohide
+    - content.code.annotate
+    - content.tooltips
+    - header.autohide
+
+extra_css:
+  - styles/numa.css
+
+extra_javascript:
+  - styles/numa.js
+
+extra:
+  generator: false
+
+markdown_extensions:
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
