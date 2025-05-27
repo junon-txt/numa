@@ -1,11 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://junon-txt.github.io/numa/katatsumuri/</loc>
-         <lastmod>2025-05-24</lastmod>
+         <loc>https://junon-txt.github.io/numa/</loc>
+         <lastmod>2025-05-27</lastmod>
     </url>
     <url>
-         <loc>https://junon-txt.github.io/numa/numa/</loc>
-         <lastmod>2025-05-24</lastmod>
+         <loc>https://junon-txt.github.io/numa/awamori/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/castillo_shuri/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/chondara/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/eisa/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/katatsumuri/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/kunigami/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/kunjan_sabakui/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/nakijin/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/protocolo_festivo_jap/</loc>
+         <lastmod>2025-05-27</lastmod>
+    </url>
+    <url>
+         <loc>https://junon-txt.github.io/numa/yoheho/</loc>
+         <lastmod>2025-05-27</lastmod>
     </url>
 </urlset>
