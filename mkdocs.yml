@@ -4,19 +4,19 @@ site_url: "https://junon-txt.github.io/numa"
 docs_dir: pages
 
 nav:
-  - Home: https://robin.ar
-  - numa.md
-  - katatsumuri.md
-  - kunjan_sabakui.md
-  - eisa.md
-  - chondara.md
-  - awamori.md
-  - castillo_shuri.md
-  - protocolo_festivo_jap.md
-  - kunigami.md
-  - nakijin.md
-  - yoheho.md
-  - yopparai.md
+  - Inicio: index.md
+  - Cultura:
+    - kunjan_sabakui.md
+    - eisa.md
+    - chondara.md
+    - castillo_shuri.md
+    - protocolo_festivo_japones.md
+    - kunigami.md
+    - nakijin.md
+    - awamori.md
+    - yoheho.md
+  - Glosario:
+    - katatsumuri.md
 
 theme:
   name: material
