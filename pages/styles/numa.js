@@ -35,31 +35,49 @@ const hidePreview = () => {
 };
 
 // Function to show preview
-const showPreview = (content, link) => {
+const showPreview = (content, link, event) => {
   const container = getPreviewContainer();
   container.textContent = content;
   container.style.display = 'block';
   
-  // Position near the mouse
-  const rect = link.getBoundingClientRect();
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+  // Position near the mouse cursor
+  const mouseX = event.clientX;
+  const mouseY = event.clientY;
   
-  container.style.left = `${rect.right + scrollLeft + 10}px`;
-  container.style.top = `${rect.top + scrollTop}px`;
+  // Add a small offset to prevent the preview from covering the cursor
+  const offsetX = 15;
+  const offsetY = 15;
+  
+  container.style.left = `${mouseX + offsetX}px`;
+  container.style.top = `${mouseY + offsetY}px`;
+  
+  // Ensure the preview stays within the viewport
+  const previewRect = container.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // If preview would go off the right edge, position it to the left of the cursor
+  if (previewRect.right > viewportWidth) {
+    container.style.left = `${mouseX - previewRect.width - offsetX}px`;
+  }
+  
+  // If preview would go off the bottom, position it above the cursor
+  if (previewRect.bottom > viewportHeight) {
+    container.style.top = `${mouseY - previewRect.height - offsetY}px`;
+  }
 };
 
 // Function to fetch and cache preview content
 const fetchPreviewContent = async (href) => {
-  console.log('Fetching preview content for:', href);
+  console.log('Fetching preview for:', href);
+  console.log('Full URL:', new URL(href, window.location.href).href);
   
   if (previewCache.has(href)) {
-    console.log('Using cached content for:', href);
+    console.log('Found in cache:', href);
     return previewCache.get(href);
   }
 
   try {
-    console.log('Making network request for:', href);
     const response = await fetch(href, {
       cache: 'no-store',
       headers: {
@@ -69,40 +87,50 @@ const fetchPreviewContent = async (href) => {
     });
     
     if (!response.ok) {
+      console.error('Fetch failed:', response.status, response.statusText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
     const text = await response.text();
-    console.log('Received content length:', text.length, 'bytes');
+    console.log('Fetched content length:', text.length);
+    console.log('First 100 chars of content:', text.substring(0, 100));
     
     const temp = document.createElement('div');
     temp.innerHTML = text;
     
     const targetId = href.split('#')[1];
-    console.log('Looking for section with ID:', targetId);
+    console.log('Looking for target ID:', targetId);
     
     let targetSection = temp.querySelector(`#${targetId}`);
+    console.log('Direct ID match:', targetSection ? 'found' : 'not found');
+    if (targetSection) {
+      console.log('Found section HTML:', targetSection.outerHTML);
+    }
+    
     if (!targetSection) {
-      console.log('Not found with # selector, trying [id] selector');
       targetSection = temp.querySelector(`[id="${targetId}"]`);
+      console.log('Attribute ID match:', targetSection ? 'found' : 'not found');
+      if (targetSection) {
+        console.log('Found section HTML:', targetSection.outerHTML);
+      }
     }
     if (!targetSection) {
-      console.log('Not found with ID selectors, searching headings');
       const headings = temp.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      console.log('Found', headings.length, 'headings');
+      console.log('Found headings:', headings.length);
+      console.log('All headings:', Array.from(headings).map(h => h.outerHTML));
       targetSection = Array.from(headings).find(h => 
         h.textContent.trim().toLowerCase().includes(targetId.toLowerCase())
       );
+      console.log('Text content match:', targetSection ? 'found' : 'not found');
+      if (targetSection) {
+        console.log('Found section HTML:', targetSection.outerHTML);
+      }
     }
     
     if (!targetSection) {
-      console.log('Target section not found. Available IDs:', 
-        Array.from(temp.querySelectorAll('[id]')).map(el => el.id)
-      );
+      console.log('No matching section found');
       return null;
     }
-    
-    console.log('Found target section:', targetSection.textContent.trim());
     
     // Get content after the header
     let content = '';
@@ -121,11 +149,10 @@ const fetchPreviewContent = async (href) => {
     
     content = content.trim();
     if (content) {
-      console.log('Extracted preview content:', content);
+      console.log('Found content length:', content.length);
+      console.log('Content preview:', content.substring(0, 100));
       previewCache.set(href, content);
       return content;
-    } else {
-      console.log('No content found after header');
     }
   } catch (error) {
     console.error('Error fetching preview:', error);
@@ -134,37 +161,36 @@ const fetchPreviewContent = async (href) => {
 };
 
 // Function to setup preview links
-const setupPreviewLinks = () => {
+const setupPreviewLinks = (isInitialSetup = false) => {
   const links = document.querySelectorAll('a[data-preview]');
-  console.log('Found', links.length, 'preview links');
   
-  links.forEach((link, index) => {
-    console.log(`Link ${index + 1}:`, {
-      href: link.href,
-      text: link.textContent.trim(),
-      dataPreview: link.getAttribute('data-preview')
+  if (isInitialSetup) {
+    console.log('Initial setup: Found', links.length, 'preview links');
+    links.forEach((link, index) => {
+      console.log(`Link ${index + 1}:`, {
+        href: link.href,
+        text: link.textContent.trim()
+      });
     });
-    
+  }
+  
+  links.forEach(link => {
     // Remove existing listeners
     link.removeEventListener('mouseenter', link._previewEnter);
     link.removeEventListener('mouseleave', link._previewLeave);
     
     // Create new listeners
-    link._previewEnter = async () => {
+    link._previewEnter = async (event) => {
       const href = link.getAttribute('href');
       if (!href) return;
       
-      console.log('Mouse entered link:', href);
       const content = await fetchPreviewContent(href);
       if (content) {
-        showPreview(content, link);
+        showPreview(content, link, event);
       }
     };
     
-    link._previewLeave = () => {
-      console.log('Mouse left link:', link.href);
-      hidePreview();
-    };
+    link._previewLeave = hidePreview;
     
     // Add listeners
     link.addEventListener('mouseenter', link._previewEnter);
@@ -174,31 +200,22 @@ const setupPreviewLinks = () => {
 
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Setting up preview functionality');
-  setupPreviewLinks();
+  setupPreviewLinks(true);
   
   // Hide preview on click
-  document.addEventListener('click', () => {
-    console.log('Click detected, hiding preview');
-    hidePreview();
-  });
+  document.addEventListener('click', hidePreview);
   
-  // Setup refresh interval
-  setInterval(() => {
-    console.log('Refreshing preview links');
-    setupPreviewLinks();
-  }, 5000);
+  // Setup refresh interval - only updates event listeners
+  setInterval(() => setupPreviewLinks(false), 5000);
 });
 
 // Handle Material for MkDocs navigation
 document.addEventListener('navigation', () => {
-  console.log('Navigation detected');
   hidePreview();
-  setupPreviewLinks();
+  setupPreviewLinks(false);
 });
 
 document.addEventListener('navigation.instant', () => {
-  console.log('Instant navigation detected');
   hidePreview();
-  setupPreviewLinks();
+  setupPreviewLinks(false);
 }); 
