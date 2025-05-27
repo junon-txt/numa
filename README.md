@@ -1,5 +1,7 @@
 # Numa
 
+Escritos por Adrián Nakasone.
+
 ## Deploy
 
 ```bash
