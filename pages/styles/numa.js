@@ -25,6 +25,15 @@
     document.body.appendChild(popover);
     popover.addEventListener('mouseenter', clearHide);
     popover.addEventListener('mouseleave', () => scheduleHide(120));
+
+    const more = popover.querySelector('.numa-preview__more');
+    more.addEventListener('click', (e) => {
+      e.stopImmediatePropagation();
+      const href = more.getAttribute('href');
+      hide();
+      if (href) window.location.assign(href);
+      e.preventDefault();
+    });
     return popover;
   };
 
