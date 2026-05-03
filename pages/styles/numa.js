@@ -1,221 +1,194 @@
-// Preview content cache
-const previewCache = new Map();
+// Preview popover for [data-preview] links.
+// Desktop (hover-capable): hover shows a card near the cursor.
+// Touch / no-hover: first tap shows a bottom-sheet card with a "Leer más"
+// action; tap outside, Escape, or a second tap on the link dismisses.
 
-// Preview container
-let previewContainer = null;
+(() => {
+  const cache = new Map();
+  let popover = null;
+  let activeLink = null;
+  let hideTimer = null;
 
-// Function to create and get preview container
-const getPreviewContainer = () => {
-  if (!previewContainer) {
-    previewContainer = document.createElement('div');
-    previewContainer.id = 'custom-preview';
-    previewContainer.style.cssText = `
-      position: fixed;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 1rem;
-      max-width: 400px;
-      max-height: 300px;
-      overflow-y: auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      z-index: 1000;
-      display: none;
-      pointer-events: none;
+  const isCoarse = () =>
+    window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+  const ensurePopover = () => {
+    if (popover) return popover;
+    popover = document.createElement('div');
+    popover.className = 'numa-preview';
+    popover.setAttribute('role', 'tooltip');
+    popover.innerHTML = `
+      <div class="numa-preview__title"></div>
+      <div class="numa-preview__body"></div>
+      <a class="numa-preview__more" href="#">Leer más →</a>
     `;
-    document.body.appendChild(previewContainer);
-  }
-  return previewContainer;
-};
+    document.body.appendChild(popover);
+    popover.addEventListener('mouseenter', clearHide);
+    popover.addEventListener('mouseleave', () => scheduleHide(120));
+    return popover;
+  };
 
-// Function to hide preview
-const hidePreview = () => {
-  const container = getPreviewContainer();
-  container.style.display = 'none';
-};
+  const clearHide = () => {
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
+  };
 
-// Function to show preview
-const showPreview = (content, link, event) => {
-  const container = getPreviewContainer();
-  container.textContent = content;
-  container.style.display = 'block';
-  
-  // Position near the mouse cursor
-  const mouseX = event.clientX;
-  const mouseY = event.clientY;
-  
-  // Add a small offset to prevent the preview from covering the cursor
-  const offsetX = 15;
-  const offsetY = 15;
-  
-  container.style.left = `${mouseX + offsetX}px`;
-  container.style.top = `${mouseY + offsetY}px`;
-  
-  // Ensure the preview stays within the viewport
-  const previewRect = container.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  
-  // If preview would go off the right edge, position it to the left of the cursor
-  if (previewRect.right > viewportWidth) {
-    container.style.left = `${mouseX - previewRect.width - offsetX}px`;
-  }
-  
-  // If preview would go off the bottom, position it above the cursor
-  if (previewRect.bottom > viewportHeight) {
-    container.style.top = `${mouseY - previewRect.height - offsetY}px`;
-  }
-};
+  const scheduleHide = (delay = 150) => {
+    clearHide();
+    hideTimer = setTimeout(hide, delay);
+  };
 
-// Function to fetch and cache preview content
-const fetchPreviewContent = async (href) => {
-  console.log('Fetching preview for:', href);
-  console.log('Full URL:', new URL(href, window.location.href).href);
-  
-  if (previewCache.has(href)) {
-    console.log('Found in cache:', href);
-    return previewCache.get(href);
-  }
+  const hide = () => {
+    clearHide();
+    if (!popover) return;
+    popover.classList.remove('is-visible', 'is-anchored');
+    activeLink = null;
+  };
 
-  try {
-    const response = await fetch(href, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+  const fetchPreview = async (href) => {
+    if (cache.has(href)) return cache.get(href);
+    try {
+      const res = await fetch(href);
+      if (!res.ok) return null;
+      const text = await res.text();
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      const targetId = (href.split('#')[1] || '').trim();
+      const target =
+        (targetId && doc.getElementById(targetId)) ||
+        doc.querySelector('article h1, .md-content h1, h1');
+      if (!target) return null;
+
+      const parts = [];
+      let node = target.nextElementSibling;
+      while (node && !/^H[1-6]$/.test(node.tagName)) {
+        const txt = node.textContent.trim();
+        if (txt) parts.push(txt);
+        if (parts.join(' ').length > 320) break;
+        node = node.nextElementSibling;
       }
-    });
-    
-    if (!response.ok) {
-      console.error('Fetch failed:', response.status, response.statusText);
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const text = await response.text();
-    console.log('Fetched content length:', text.length);
-    console.log('First 100 chars of content:', text.substring(0, 100));
-    
-    const temp = document.createElement('div');
-    temp.innerHTML = text;
-    
-    const targetId = href.split('#')[1];
-    console.log('Looking for target ID:', targetId);
-    
-    let targetSection = temp.querySelector(`#${targetId}`);
-    console.log('Direct ID match:', targetSection ? 'found' : 'not found');
-    if (targetSection) {
-      console.log('Found section HTML:', targetSection.outerHTML);
-    }
-    
-    if (!targetSection) {
-      targetSection = temp.querySelector(`[id="${targetId}"]`);
-      console.log('Attribute ID match:', targetSection ? 'found' : 'not found');
-      if (targetSection) {
-        console.log('Found section HTML:', targetSection.outerHTML);
-      }
-    }
-    if (!targetSection) {
-      const headings = temp.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      console.log('Found headings:', headings.length);
-      console.log('All headings:', Array.from(headings).map(h => h.outerHTML));
-      targetSection = Array.from(headings).find(h => 
-        h.textContent.trim().toLowerCase().includes(targetId.toLowerCase())
-      );
-      console.log('Text content match:', targetSection ? 'found' : 'not found');
-      if (targetSection) {
-        console.log('Found section HTML:', targetSection.outerHTML);
-      }
-    }
-    
-    if (!targetSection) {
-      console.log('No matching section found');
+      const body = parts.join(' ').trim().slice(0, 280);
+      const result = { title: target.textContent.trim(), body };
+      cache.set(href, result);
+      return result;
+    } catch {
       return null;
     }
-    
-    // Get content after the header
-    let content = '';
-    let currentNode = targetSection.nextSibling;
-    while (currentNode && 
-           !(currentNode.nodeType === 1 && 
-             currentNode.tagName && 
-             currentNode.tagName.match(/^H[1-6]$/))) {
-      if (currentNode.nodeType === 3) {
-        content += currentNode.textContent;
-      } else if (currentNode.nodeType === 1) {
-        content += currentNode.textContent;
-      }
-      currentNode = currentNode.nextSibling;
-    }
-    
-    content = content.trim();
-    if (content) {
-      console.log('Found content length:', content.length);
-      console.log('Content preview:', content.substring(0, 100));
-      previewCache.set(href, content);
-      return content;
-    }
-  } catch (error) {
-    console.error('Error fetching preview:', error);
-  }
-  return null;
-};
+  };
 
-// Function to setup preview links
-const setupPreviewLinks = (isInitialSetup = false) => {
-  const links = document.querySelectorAll('a[data-preview]');
-  
-  if (isInitialSetup) {
-    console.log('Initial setup: Found', links.length, 'preview links');
-    links.forEach((link, index) => {
-      console.log(`Link ${index + 1}:`, {
-        href: link.href,
-        text: link.textContent.trim()
-      });
-    });
-  }
-  
-  links.forEach(link => {
-    // Remove existing listeners
-    link.removeEventListener('mouseenter', link._previewEnter);
-    link.removeEventListener('mouseleave', link._previewLeave);
-    
-    // Create new listeners
-    link._previewEnter = async (event) => {
-      const href = link.getAttribute('href');
-      if (!href) return;
-      
-      const content = await fetchPreviewContent(href);
-      if (content) {
-        showPreview(content, link, event);
-      }
-    };
-    
-    link._previewLeave = hidePreview;
-    
-    // Add listeners
-    link.addEventListener('mouseenter', link._previewEnter);
-    link.addEventListener('mouseleave', link._previewLeave);
+  const positionAt = (event) => {
+    const el = ensurePopover();
+    if (isCoarse()) {
+      el.classList.add('is-anchored');
+      el.style.left = '';
+      el.style.top = '';
+      return;
+    }
+    el.classList.remove('is-anchored');
+    const rect = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const offset = 14;
+    let x = event.clientX + offset;
+    let y = event.clientY + offset;
+    if (x + rect.width > vw - 8) x = event.clientX - rect.width - offset;
+    if (y + rect.height > vh - 8) y = event.clientY - rect.height - offset;
+    if (x < 8) x = 8;
+    if (y < 8) y = 8;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+  };
+
+  const show = async (link, event) => {
+    activeLink = link;
+    const href = link.href;
+    const data = await fetchPreview(href);
+    if (!data || activeLink !== link) return;
+
+    const el = ensurePopover();
+    el.querySelector('.numa-preview__title').textContent = data.title;
+    el.querySelector('.numa-preview__body').textContent =
+      data.body || '(sin descripción)';
+    el.querySelector('.numa-preview__more').href = href;
+    el.classList.add('is-visible');
+    positionAt(event);
+  };
+
+  // Hover (fine pointer) — delegated through mouseover/mouseout.
+  document.addEventListener('mouseover', (e) => {
+    if (isCoarse()) return;
+    const link = e.target.closest('a[data-preview]');
+    if (!link) return;
+    if (e.relatedTarget && link.contains(e.relatedTarget)) return;
+    clearHide();
+    show(link, e);
   });
-};
 
-// Initial setup
-document.addEventListener('DOMContentLoaded', () => {
-  setupPreviewLinks(true);
-  
-  // Hide preview on click
-  document.addEventListener('click', hidePreview);
-  
-  // Setup refresh interval - only updates event listeners
-  setInterval(() => setupPreviewLinks(false), 5000);
-});
+  document.addEventListener('mouseout', (e) => {
+    if (isCoarse()) return;
+    const link = e.target.closest('a[data-preview]');
+    if (!link) return;
+    if (e.relatedTarget && link.contains(e.relatedTarget)) return;
+    scheduleHide();
+  });
 
-// Handle Material for MkDocs navigation
-document.addEventListener('navigation', () => {
-  hidePreview();
-  setupPreviewLinks(false);
-});
+  document.addEventListener(
+    'mousemove',
+    (e) => {
+      if (isCoarse()) return;
+      if (!popover || !popover.classList.contains('is-visible')) return;
+      if (e.target.closest('.numa-preview')) return;
+      positionAt(e);
+    },
+    { passive: true }
+  );
 
-document.addEventListener('navigation.instant', () => {
-  hidePreview();
-  setupPreviewLinks(false);
-}); 
+  // Tap (coarse pointer) — first tap previews, second tap navigates.
+  // Use capture + stopImmediatePropagation so Material's instant-navigation
+  // handler doesn't route away before we get a chance to intercept.
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (e.target.closest('.numa-preview__more')) return; // let it navigate
+      const link = e.target.closest('a[data-preview]');
+      if (!link) return;
+      if (!isCoarse()) return;
+
+      const opened =
+        activeLink === link &&
+        popover &&
+        popover.classList.contains('is-visible');
+      if (opened) {
+        hide();
+        return; // proceed with default navigation
+      }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      show(link, e);
+    },
+    true
+  );
+
+  // Dismiss on outside tap / Escape / scroll.
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!popover || !popover.classList.contains('is-visible')) return;
+      if (e.target.closest('.numa-preview')) return;
+      if (e.target.closest('a[data-preview]')) return;
+      hide();
+    },
+    true
+  );
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hide();
+  });
+
+  window.addEventListener('scroll', () => hide(), { passive: true });
+
+  // Material for MkDocs instant navigation: hide on page change.
+  document.addEventListener('navigation.instant', hide);
+  document.addEventListener('navigation', hide);
+})();

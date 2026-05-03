@@ -87,3 +87,91 @@ p {
 .md-typeset details ::after{
     display: none !important;
 }
+
+/* 🔗 Affordance: previewable links get a subtle dotted underline */
+a[data-preview] {
+    text-decoration: underline dotted;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    cursor: help;
+}
+@media (hover: none), (pointer: coarse) {
+    a[data-preview] { cursor: pointer; }
+}
+
+/* 🪟 Preview popover — desktop card near cursor */
+.numa-preview {
+    position: fixed;
+    z-index: 1000;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 0.85rem 1rem;
+    max-width: 340px;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #040404;
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity 140ms ease, transform 140ms ease;
+}
+.numa-preview.is-visible {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+
+.numa-preview__title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+    color: #040404;
+}
+
+.numa-preview__body {
+    text-indent: 0;
+    text-align: left;
+    margin: 0 0 0.6rem 0;
+    color: #333;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.numa-preview__more {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--md-accent-fg-color, #4051b5);
+    text-decoration: none;
+}
+.numa-preview__more:hover { text-decoration: underline; }
+
+/* Desktop: clicking the link itself navigates, so hide the redundant CTA */
+@media (hover: hover) and (pointer: fine) {
+    .numa-preview__more { display: none; }
+}
+
+/* 📱 Mobile: anchor as a bottom sheet — clear, thumb-friendly */
+@media (hover: none), (pointer: coarse) {
+    .numa-preview.is-anchored {
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: 0.75rem;
+        top: auto;
+        max-width: none;
+        padding: 1rem 1.1rem;
+        border-radius: 14px;
+        box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+    }
+    .numa-preview__more {
+        margin-top: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        background: rgba(0, 0, 0, 0.06);
+        border-radius: 8px;
+    }
+}
